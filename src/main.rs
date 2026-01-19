@@ -14,6 +14,7 @@ struct VowelInput {
 }
 
 // Output struct for /test route
+
 #[derive(Serialize)]
 struct VowelOutput {
     output: String,
