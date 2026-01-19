@@ -60,7 +60,8 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health_check)) // AWS ALB needs this!
         .route("/hello", get(hello_world))
-        .route("/test", axum::routing::post(test_remove_vowels));
+        .route("/test", axum::routing::post(test_remove_vowels))
+        .route("/version", get(current_version));
 
     // 4. Bind to 0.0.0.0 (Required for Docker)
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
@@ -74,6 +75,10 @@ async fn main() {
 // The Load Balancer pings this every 30s. If it fails, the container is killed.
 async fn health_check() -> &'static str {
     "OK"
+}
+
+async fn current_version() -> &'static str {
+    "v1.0.0"
 }
 
 // Handler: Business Logic
