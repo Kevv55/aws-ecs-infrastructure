@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build-and-push:
@@ -64,3 +65,30 @@ jobs:
         exit-code: '0' # Set to '1' if you want to fail the build on high vulnerabilities
         ignore-unfixed: true
         severity: 'CRITICAL,HIGH'
+
+    # 7. Download the current Task Definition
+    # We grab the "blueprints" currently running in AWS so we can edit them.
+    - name: Download task definition
+      run: |
+        aws ecs describe-task-definition --task-definition tauri-rust-task --query taskDefinition > task-definition.json
+
+    # 8. Update the Image ID in the Task Definition
+    # This replaces the old image URL with the NEW one (using the specific SHA).
+    # This guarantees that exactly what you built is what runs.
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition.json
+        container-name: rust-app
+        image: ${{ steps.build-image.outputs.image }}
+
+    # 9. Deploy to ECS
+    # This tells AWS: "Here is the new blueprint. Perform a Rolling Update."
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: tauri-service
+        cluster: tauri-cluster
+        wait-for-service-stability: true
